@@ -1,0 +1,53 @@
+---
+title: "Prediction Assignment"
+author: "rafaelmenmell@gmail.com"
+date: "6 de julio de 2017"
+output: html_document
+---
+
+```{r library, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(caret)
+library(randomForest)
+```
+
+## Data downloading and preparation
+
+In this section data is dowloaded and prepared.
+
+```{r chunk1}
+download.file(url = "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv",destfile = "train.csv")
+training <- read.csv(file = "train.csv",na.strings = c("NA","#DIV/0!",""))
+
+download.file(url = "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv",destfile = "test.csv")
+testing <- read.csv(file = "test.csv",na.strings = c("NA","#DIV/0!",""))
+```
+
+First 8 columns (X, user_name, raw_timestamp_part_1, raw_timestamp_part_2, cvtd_timestamp, new_window, num_window) are useless for modelling so ther are deleted
+
+```{r chunk2}
+training <- training[,-(1:8)]
+```
+
+Columns with all NA are deleted.
+
+```{r chunk3}
+training <- training[,colSums(is.na(training))==0]
+```
+
+## Modelling
+
+Training data set is splitted in training.model and testing.model
+```{r chunk4}
+index <- createDataPartition(y=training$classe, p=0.70, list=FALSE )
+training.model <- training[index,]
+testing.model <- training[-index,]
+training.model$classe <- factor(training.model$classe)
+testing.model$classe <- factor(testing.model$classe)
+model1 <- randomForest(classe ~ . , data = training.model)
+cm <- confusionMatrix(testing.model$classe,predict(model1,testing.model))
+
+#Accuracy
+cm$overall[1]
+```
+Accuracy for this random forest model is vey high, more than 99% in testing, so it's going to be used in the 20 elements exercise
